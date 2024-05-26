@@ -14,8 +14,4 @@ def read_gpkg(file_location):
 	nodes = nodes.to_crs("epsg:4326")
 	nodes_json = json.loads(gpd.GeoDataFrame.to_json(nodes))
 
-	return {
-		"roads": roads_json["features"],
-		"intersections": intersections_json["features"],
-		"nodes": nodes_json["features"]
-	}
+	return roads_json["features"], intersections_json["features"], nodes_json["features"]

@@ -4,7 +4,7 @@ import networkx as nx
 
 
 class GA:
-    def __init__(self, graph, source, target, population_size=20, generations=300, mutation_rate=0.2, tournament_size=5):
+    def __init__(self, graph, source, target, population_size=50, generations=300, mutation_rate=0.2, tournament_size=5):
         self.graph = graph
         self.source = source
         self.target = target
@@ -40,7 +40,7 @@ class GA:
     def fitness(self, individual):
         if (individual[-1] != self.target):
             return 0
-        path_length = sum(self.graph[edge[0]][edge[1]]['weight'] for edge in zip(individual[:-1], individual[1:]))
+        path_length = sum(self.graph[edge[0]][edge[1]][0]['weight'] for edge in zip(individual[:-1], individual[1:]))
         return 10 / path_length
 
     def tournament_selection(self):
@@ -62,7 +62,6 @@ class GA:
 
             if len(new_path) > 1 and node not in self.graph.neighbors(new_path[-1]):
                 try:
-                    
                     shortest_path = nx.shortest_path(self.graph, new_path[-1], node)[1:]
                     new_path += shortest_path
 
