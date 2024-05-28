@@ -19,21 +19,25 @@ class GA:
         for _ in range(self.population_size):
             individual = self.random_path(self.source, self.target)
             population.append(individual)
+        
         return population
 
     def random_path(self, start, end):
         path = [start]
 
         while path[-1] != end:
-            
-            neighbors = list(filter(lambda x: x not in path, self.graph.neighbors(path[-1])))
+          path = [start]
 
-            if not neighbors:
-                break;  # Dead end
+          while path[-1] != end:
+              
+              neighbors = list(filter(lambda x: x not in path, self.graph.successors(path[-1])))
 
-            next_node = random.choice(neighbors)
+              if not neighbors:
+                  break;  # Dead end
 
-            path.append(next_node)
+              next_node = random.choice(neighbors)
+
+              path.append(next_node)
 
         return path
 

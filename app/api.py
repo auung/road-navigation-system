@@ -1,6 +1,6 @@
+import json
 from flask import Blueprint, current_app, jsonify, request
 from flask_cors import CORS
-
 from . import db
 
 api = Blueprint("api", __name__)
@@ -14,15 +14,22 @@ def index():
 
   return jsonify(road_segments)
 
-@api.route("/navigate")
+@api.route("/navigate", methods=["GET", "POST"])
 def navigate():
   if request.method == "GET":
-    intersections = [[intersection["geometry"]["coordinates"][1], intersection["geometry"]["coordinates"][0]] for intersection in current_app.intersections]
+    from .utils.get_intersections import get_intersections
+
+    intersections = get_intersections()
+    return jsonify(intersections);
 
   if request.method == "POST":
-    start, end = request.get_json()
-    return None
+    from .utils.get_route import get_route
+
+    start, end = request.json
+    print(start, end)
+    route = get_route(int(start), int(end))
+    return jsonify(route)
 
 @api.route("/test")
 def test():
-  return None
+  return jsonify({ "message": "This is a test"})
