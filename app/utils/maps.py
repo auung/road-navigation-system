@@ -1,6 +1,4 @@
-from . import read_gpkg
 from flask import current_app
-from app import db
 
 road_id_to_nodes = {}
 for road in current_app.roads:

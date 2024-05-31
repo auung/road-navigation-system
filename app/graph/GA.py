@@ -4,121 +4,152 @@ import networkx as nx
 
 
 class GA:
-    def __init__(self, graph, source, target, population_size=50, generations=300, mutation_rate=0.2, tournament_size=5):
-        self.graph = graph
-        self.source = source
-        self.target = target
-        self.population_size = population_size
-        self.generations = generations
-        self.mutation_rate = mutation_rate
-        self.tournament_size = tournament_size
-        self.population = self.initialize_population()
+  def __init__(self, graph, source, target, population_size=30, generations=350, mutation_rate=0.25, tournament_size=15):
+    self.graph = graph
+    self.source = source
+    self.target = target
+    self.population_size = population_size
+    self.generations = generations
+    self.mutation_rate = mutation_rate
+    self.tournament_size = tournament_size
+    self.count = 0
+    self.population = self.initialize_population()
 
-    def initialize_population(self):
-        population = []
-        for _ in range(self.population_size):
-            individual = self.random_path(self.source, self.target)
-            population.append(individual)
-        
-        return population
+  def initialize_population(self):
+    population = []
+    for _ in range(self.population_size):
+      individual = self.random_path(self.source, self.target)
+      population.append(individual)
+    
+    return population
 
-    def random_path(self, start, end):
-        path = [start]
+  def random_path_random(self, start, end):
+    path = [start]
 
-        while path[-1] != end:
-          path = [start]
+    while path[-1] != end:
+      path = [start]
+      self.count += 1
 
-          while path[-1] != end:
-              
-              neighbors = list(filter(lambda x: x not in path, self.graph.successors(path[-1])))
+      while path[-1] != end:
+        neighbors = list(filter(lambda x: x not in path, self.graph.successors(path[-1])))
 
-              if not neighbors:
-                  break;  # Dead end
+        if not neighbors:
+            break;  # Dead end
 
-              next_node = random.choice(neighbors)
+        next_node = random.choice(neighbors)
+        path.append(next_node)
 
-              path.append(next_node)
+    return path
 
+  def random_path_backtrack(self, start, end):
+    for _ in range(self.graph.number_of_nodes()):
+      path = [start]
+      visited = set(path)
+
+      while path[-1] != end:
+        current_node = path[-1]
+        neighbors = list(self.graph.successors(current_node))
+        unvisited_neighbors = [n for n in neighbors if n not in visited]
+
+        if unvisited_neighbors:
+          next_node = random.choice(unvisited_neighbors)
+          path.append(next_node)
+          visited.add(next_node)
+
+        else:
+          if len(path) > 1:
+            path.pop()
+
+          else:
+            break
+
+      if path[-1] == end:
         return path
 
-    def fitness(self, individual):
-        if (individual[-1] != self.target):
-            return 0
-        path_length = sum(self.graph[edge[0]][edge[1]][0]['weight'] for edge in zip(individual[:-1], individual[1:]))
-        return 10 / path_length
+    return None
 
-    def tournament_selection(self):
-        tournament = random.sample(self.population, self.tournament_size)
-        tournament_fitness = [self.fitness(individual) for individual in tournament]
-        return tournament[np.argmax(tournament_fitness)]
+  def random_path(self, start, end):
+    return self.random_path_backtrack(start, end)
 
-    def crossover(self, parent1, parent2):
-        start = random.choice(range(len(parent2)))
-        child = parent1[:start] + parent2[start:]
-        return self.fix_path(child)
+  def fitness(self, individual):
+    if (individual[-1] != self.target):
+      return 0
+    path_length = sum(self.graph[edge[0]][edge[1]][0]['weight'] for edge in zip(individual[:-1], individual[1:]))
+    return 10 / path_length
 
-    def fix_path(self, path):
-        seen = set()
-        new_path = []
-        for node in path:
-            if node in seen:
-                break
+  def tournament_selection(self):
+    tournament = random.sample(self.population, self.tournament_size)
+    tournament_fitness = [self.fitness(individual) for individual in tournament]
+    return tournament[np.argmax(tournament_fitness)]
 
-            if len(new_path) > 1 and node not in self.graph.neighbors(new_path[-1]):
-                try:
-                    shortest_path = nx.shortest_path(self.graph, new_path[-1], node)[1:]
-                    new_path += shortest_path
+  def crossover(self, parent1, parent2):
+    start = random.choice(range(len(parent2)))
+    # start, end = random.sample(range(len(parent2)), 2).sort()
+    child = parent1[:start] + parent2[start:]
+    return self.fix_path(child)
 
-                    for i in shortest_path:
-                        seen.add(i)
+  def fix_path(self, path):
+    seen = set()
+    new_path = []
+    for node in path:
+      if node in seen:
+        break
 
-                except nx.NetworkXNoPath:
-                    return None
-            else:
-                seen.add(node)
-                new_path.append(node)
+      if len(new_path) > 1 and node not in self.graph.neighbors(new_path[-1]):
+        try:
+            shortest_path = nx.shortest_path(self.graph, new_path[-1], node)[1:]
+            new_path += shortest_path
 
-        return new_path
+            for i in shortest_path:
+              seen.add(i)
 
-    def mutate(self, individual):
-        if len(individual) > 2 and random.random() < self.mutation_rate:
-            node = random.choice(range(len(individual))[1:-1])
-            individual = individual[:node] + self.random_path(individual[node], self.target)
+        except nx.NetworkXNoPath:
+          return None
+      else:
+          seen.add(node)
+          new_path.append(node)
 
-        return individual
+    return new_path
 
-    def run(self):
-        best_individual = None
-        best_fitness = float('-inf')
+  def mutate(self, individual):
+    if len(individual) > 2 and random.random() < self.mutation_rate:
+      node = random.choice(range(len(individual))[1:-1])
+      individual = individual[:node] + self.random_path(individual[node], self.target)
 
-        for generation in range(self.generations):
-            new_population = []
+    return individual
 
-            while len(new_population) < self.population_size:
-                best1 = self.tournament_selection()
-                best2 = self.tournament_selection()
-                child1 = self.mutate(self.crossover(best1, best2))
-                child2 = self.mutate(self.crossover(best2, best1))
+  def run(self):
+    best_individual = None
+    best_fitness = float('-inf')
 
-                new_population.append(best1)
-                new_population.append(best2)
+    for generation in range(self.generations):
+      new_population = []
 
-                if len(child1) > 2:
-                    child1 = self.mutate(child1)
-                if len(child2) > 2:
-                    child2 = self.mutate(child2)
-                new_population.append(child1)
-                new_population.append(child2)
+      while len(new_population) < self.population_size:
+        best1 = self.tournament_selection()
+        best2 = self.tournament_selection()
+        child1 = self.mutate(self.crossover(best1, best2))
+        child2 = self.mutate(self.crossover(best2, best1))
 
-            self.population = new_population
+        new_population.append(best1)
+        new_population.append(best2)
 
-            for individual in self.population:
-                current_fitness = self.fitness(individual)
-                if current_fitness > best_fitness:
-                    best_fitness = current_fitness
-                    best_individual = individual
+        if len(child1) > 2:
+          child1 = self.mutate(child1)
+        if len(child2) > 2:
+          child2 = self.mutate(child2)
+        new_population.append(child1)
+        new_population.append(child2)
 
-            # print(f"Generation {generation + 1}: Best path = {best_individual}, Best Fitness = {best_fitness}")
+      self.population = new_population
 
-        # path_length = sum(self.graph[edge[0]][edge[1]]['weight'] for edge in zip(best_individual[:-1], best_individual[1:]))
-        return best_individual
+      for individual in self.population:
+        current_fitness = self.fitness(individual)
+        if current_fitness > best_fitness:
+          best_fitness = current_fitness
+          best_individual = individual
+
+      # print(f"Generation {generation + 1}: Best path = {best_individual}, Best Fitness = {best_fitness}")
+
+    # path_length = sum(self.graph[edge[0]][edge[1]]['weight'] for edge in zip(best_individual[:-1], best_individual[1:]))
+    return best_individual

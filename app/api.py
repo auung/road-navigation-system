@@ -1,7 +1,8 @@
 import json
-from flask import Blueprint, current_app, jsonify, request
+from flask import Blueprint, current_app, jsonify, request, g
 from flask_cors import CORS
 from . import db
+import time
 
 api = Blueprint("api", __name__)
 CORS(api, resources=r"/api/*", origins=["http://localhost:5173"])
@@ -24,10 +25,13 @@ def navigate():
 
   if request.method == "POST":
     from .utils.get_route import get_route
-
     start, end = request.json
-    print(start, end)
+
+    startTime = time.time()
     route = get_route(int(start), int(end))
+    endTime = time.time()
+    
+    print(endTime - startTime)
     return jsonify(route)
 
 @api.route("/test")

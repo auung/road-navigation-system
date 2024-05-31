@@ -54,7 +54,6 @@ def get_segments(edge, node_coords):
 
 
 def insert_roads():
-
   for road in roads_json["features"]:
     id = int(road["id"])
     length = float(road["properties"]["road_length"])

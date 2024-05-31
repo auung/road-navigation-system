@@ -2,9 +2,8 @@ import json
 import networkx as nx
 import geopandas as gpd
 import functools
-
+from flask import g
 from ..utils.maps import coords_to_intersection_id, intersection_id_to_coords
-from app import db
 
 def createGraph():
   edges = []
@@ -15,10 +14,8 @@ def createGraph():
     JOIN roads AS r ON r.id = s.road_id
     JOIN traffic AS t ON t.segment_id = s.id
   """
-
-  cursor = db.connection.cursor()
-  cursor.execute(sql)
-  results = cursor.fetchall()
+  g.cursor.execute(sql)
+  results = g.cursor.fetchall()
 
   for result in results:
     u = result["start_node_id"]
