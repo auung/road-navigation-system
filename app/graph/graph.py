@@ -5,7 +5,7 @@ import functools
 from flask import g
 from ..utils.maps import coords_to_intersection_id, intersection_id_to_coords
 
-def createGraph():
+def createGraph(step = 0):
   edges = []
 
   sql = f"""
@@ -13,6 +13,7 @@ def createGraph():
     FROM segments AS s
     JOIN roads AS r ON r.id = s.road_id
     JOIN traffic AS t ON t.segment_id = s.id
+    WHERE time = {step}
   """
   g.cursor.execute(sql)
   results = g.cursor.fetchall()

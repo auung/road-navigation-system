@@ -111,12 +111,12 @@ class Database:
     self.cursor.execute(sql)
     segments = self.cursor.fetchall()
 
-    for i in range(10):
+    for i in range(20):
       for segment in segments:
         segment_id = segment["id"]
 
         traffic_density = round(random.triangular(0, 100, 15)) / 100
-        sql = f"INSERT INTO traffic (id, segment_id, traffic_density, time) VALUES (NULL, {segment_id}, {traffic_density}, {i + 1})"
+        sql = f"INSERT INTO traffic (id, segment_id, traffic_density, time) VALUES (NULL, {segment_id}, {traffic_density}, {i})"
         self.cursor.execute(sql)
 
     self.conn.commit()

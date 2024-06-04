@@ -12,7 +12,6 @@ class GA:
     self.generations = generations
     self.mutation_rate = mutation_rate
     self.tournament_size = tournament_size
-    self.count = 0
     self.population = self.initialize_population()
 
   def initialize_population(self):
@@ -28,13 +27,12 @@ class GA:
 
     while path[-1] != end:
       path = [start]
-      self.count += 1
 
       while path[-1] != end:
         neighbors = list(filter(lambda x: x not in path, self.graph.successors(path[-1])))
 
         if not neighbors:
-            break;  # Dead end
+          break;  # Dead end
 
         next_node = random.choice(neighbors)
         path.append(next_node)
@@ -48,7 +46,7 @@ class GA:
 
       while path[-1] != end:
         current_node = path[-1]
-        neighbors = list(self.graph.successors(current_node))
+        neighbors = list(filter(lambda x: x not in visited, self.graph.successors(current_node)))
         unvisited_neighbors = [n for n in neighbors if n not in visited]
 
         if unvisited_neighbors:
@@ -83,8 +81,13 @@ class GA:
     return tournament[np.argmax(tournament_fitness)]
 
   def crossover(self, parent1, parent2):
-    start = random.choice(range(len(parent2)))
-    # start, end = random.sample(range(len(parent2)), 2).sort()
+    start1, end1 = sorted(random.sample(range(len(parent1))[1:-1], k=2))
+    start2, end2 = sorted(random.sample(range(len(parent2))[1:-1], k=2))
+
+    child1 = parent1[:start1] + parent2[start2:end2] + parent1[end1:]
+    child2 = parent2[:start2] + parent1[start1:end1] + parent2[end2:]
+
+    start = random.choice(range(len(parent1)))
     child = parent1[:start] + parent2[start:]
     return self.fix_path(child)
 
@@ -95,26 +98,26 @@ class GA:
       if node in seen:
         break
 
-      if len(new_path) > 1 and node not in self.graph.neighbors(new_path[-1]):
+      if len(new_path) > 1 and node not in self.graph.successors(new_path[-1]):
         try:
-            shortest_path = nx.shortest_path(self.graph, new_path[-1], node)[1:]
-            new_path += shortest_path
+          shortest_path = nx.shortest_path(self.graph, new_path[-1], node)[1:]
+          new_path += shortest_path
 
-            for i in shortest_path:
-              seen.add(i)
+          for i in shortest_path:
+            seen.add(i)
 
         except nx.NetworkXNoPath:
           return None
       else:
-          seen.add(node)
-          new_path.append(node)
+        seen.add(node)
+        new_path.append(node)
 
     return new_path
 
   def mutate(self, individual):
     if len(individual) > 2 and random.random() < self.mutation_rate:
       node = random.choice(range(len(individual))[1:-1])
-      individual = individual[:node] + self.random_path(individual[node], self.target)
+      individual = individual[:node] + self.random_path_random(individual[node], self.target)
 
     return individual
 
@@ -128,8 +131,8 @@ class GA:
       while len(new_population) < self.population_size:
         best1 = self.tournament_selection()
         best2 = self.tournament_selection()
-        child1 = self.mutate(self.crossover(best1, best2))
-        child2 = self.mutate(self.crossover(best2, best1))
+        child1 = self.crossover(best1, best2)
+        child2 = self.crossover(best2, best1)
 
         new_population.append(best1)
         new_population.append(best2)
@@ -138,6 +141,7 @@ class GA:
           child1 = self.mutate(child1)
         if len(child2) > 2:
           child2 = self.mutate(child2)
+
         new_population.append(child1)
         new_population.append(child2)
 

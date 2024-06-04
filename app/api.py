@@ -21,19 +21,20 @@ def navigate():
     from .utils.get_intersections import get_intersections
 
     intersections = get_intersections()
-    return jsonify(intersections);
+    return jsonify(intersections)
 
   if request.method == "POST":
     from .utils.get_route import get_route
     start, end = request.json
 
     startTime = time.time()
-    route = get_route(int(start), int(end))
+    route, distance = get_route(int(start), int(end))
     endTime = time.time()
     
     print(endTime - startTime)
-    return jsonify(route)
+    return jsonify({"route": route, "distance": distance})
 
 @api.route("/test")
 def test():
+
   return jsonify({ "message": "This is a test"})
