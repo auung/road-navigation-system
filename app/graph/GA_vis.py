@@ -1,10 +1,12 @@
 import random
 import numpy as np
 import networkx as nx
+import gc
+from ..utils.format_coords import format_route
 
 
 class GA:
-  def __init__(self, graph, source, target, population_size=25, generations=250, mutation_rate=0.25, tournament_size=15):
+  def __init__(self, graph, source, target, population_size=25, generations=300, mutation_rate=0.25, tournament_size=15):
     self.graph = graph
     self.source = source
     self.target = target
@@ -122,10 +124,14 @@ class GA:
     return individual
 
   def run(self):
+    gc.disable()
+    all = []
     best_individual = None
     best_fitness = float('-inf')
 
     for generation in range(self.generations):
+      sorted_population = sorted(self.population, key=lambda x: self.fitness(x))
+      all.append([{"route": format_route(route), "distance": 0} for route in sorted_population])
       new_population = []
 
       while len(new_population) < self.population_size:
@@ -156,4 +162,5 @@ class GA:
       # print(f"Generation {generation + 1}: Best path = {best_individual}, Best Fitness = {best_fitness}")
 
     # path_length = sum(self.graph[edge[0]][edge[1]]['weight'] for edge in zip(best_individual[:-1], best_individual[1:]))
-    return best_individual
+    gc.enable()
+    return all

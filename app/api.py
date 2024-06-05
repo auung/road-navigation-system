@@ -36,5 +36,11 @@ def navigate():
 
 @api.route("/test")
 def test():
+  from .utils.get_visuals import get_visuals
 
-  return jsonify({ "message": "This is a test"})
+  startTime = time.time()
+  results = get_visuals()
+  endTime = time.time()
+  print(endTime - startTime)
+
+  return jsonify(results)
