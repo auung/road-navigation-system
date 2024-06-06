@@ -6,7 +6,7 @@ from ..utils.format_coords import format_route
 
 
 class GA:
-  def __init__(self, graph, source, target, population_size=25, generations=300, mutation_rate=0.25, tournament_size=15):
+  def __init__(self, graph, source, target, population_size=40, generations=250, mutation_rate=0.25, tournament_size=10):
     self.graph = graph
     self.source = source
     self.target = target
@@ -75,7 +75,7 @@ class GA:
     if (individual[-1] != self.target):
       return 0
     path_length = sum(self.graph[edge[0]][edge[1]][0]['weight'] for edge in zip(individual[:-1], individual[1:]))
-    return 10 / path_length
+    return 1000 / path_length
 
   def tournament_selection(self):
     tournament = random.sample(self.population, self.tournament_size)
@@ -83,14 +83,11 @@ class GA:
     return tournament[np.argmax(tournament_fitness)]
 
   def crossover(self, parent1, parent2):
-    start1, end1 = sorted(random.sample(range(len(parent1))[1:-1], k=2))
-    start2, end2 = sorted(random.sample(range(len(parent2))[1:-1], k=2))
+    min_length = sorted([len(parent1), len(parent2)])[0]
+    start, end = sorted(random.sample(range(min_length)[1:-1], k=2))
 
-    child1 = parent1[:start1] + parent2[start2:end2] + parent1[end1:]
-    child2 = parent2[:start2] + parent1[start1:end1] + parent2[end2:]
+    child = parent1[:start] + parent2[start:end] + parent1[end:]
 
-    start = random.choice(range(len(parent1)))
-    child = parent1[:start] + parent2[start:]
     return self.fix_path(child)
 
   def fix_path(self, path):
@@ -98,7 +95,7 @@ class GA:
     new_path = []
     for node in path:
       if node in seen:
-        break
+        continue
 
       if len(new_path) > 1 and node not in self.graph.successors(new_path[-1]):
         try:
@@ -118,8 +115,8 @@ class GA:
 
   def mutate(self, individual):
     if len(individual) > 2 and random.random() < self.mutation_rate:
-      node = random.choice(range(len(individual))[1:-1])
-      individual = individual[:node] + self.random_path_random(individual[node], self.target)
+      node = random.choice(range(len(individual))[:-1])
+      individual = individual[:node] + self.random_path(individual[node], self.target)
 
     return individual
 
@@ -131,25 +128,20 @@ class GA:
 
     for generation in range(self.generations):
       sorted_population = sorted(self.population, key=lambda x: self.fitness(x))
-      all.append([{"route": format_route(route), "distance": 0} for route in sorted_population])
+      all.append([{"route": format_route(route), "distance": 0, "fitness": self.fitness(route)} for route in sorted_population])
       new_population = []
 
       while len(new_population) < self.population_size:
         best1 = self.tournament_selection()
         best2 = self.tournament_selection()
-        child1 = self.crossover(best1, best2)
-        child2 = self.crossover(best2, best1)
+        child = self.crossover(best1, best2)
+
+        if len(child) > 2:
+          child = self.mutate(child)
 
         new_population.append(best1)
         new_population.append(best2)
-
-        if len(child1) > 2:
-          child1 = self.mutate(child1)
-        if len(child2) > 2:
-          child2 = self.mutate(child2)
-
-        new_population.append(child1)
-        new_population.append(child2)
+        new_population.append(child)
 
       self.population = new_population
 

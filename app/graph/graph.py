@@ -2,11 +2,13 @@ import json
 import networkx as nx
 import geopandas as gpd
 import functools
+import math
 from flask import g
 from ..utils.maps import coords_to_intersection_id, intersection_id_to_coords
 
-def createGraph(step = 0):
+def createGraph(priority = "time", step = 0):
   edges = []
+  alpha, beta = [2, 1] if priority == "distance" else [1, 2]
 
   sql = f"""
     SELECT start_node_id, end_node_id, traffic_density, length
@@ -21,7 +23,7 @@ def createGraph(step = 0):
   for result in results:
     u = result["start_node_id"]
     v = result["end_node_id"]
-    weight = result["traffic_density"] * result["length"]
+    weight = result["length"] * alpha + result["traffic_density"] * beta
     edges.append((u, v, weight))
 
   G = nx.MultiDiGraph()

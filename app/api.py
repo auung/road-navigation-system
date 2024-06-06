@@ -25,16 +25,16 @@ def navigate():
 
   if request.method == "POST":
     from .utils.get_route import get_route
-    start, end = request.json
+    start, end, priority = request.json
 
     startTime = time.time()
-    route, distance = get_route(int(start), int(end))
+    route, distance = get_route(int(start), int(end), priority)
     endTime = time.time()
     
     print(endTime - startTime)
     return jsonify({"route": route, "distance": distance})
 
-@api.route("/test")
+@api.route("/visualize")
 def test():
   from .utils.get_visuals import get_visuals
 
