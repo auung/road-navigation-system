@@ -1,10 +1,11 @@
 from ..graph.GA import GA
-from ..graph.graph import createGraph
+from ..graph.graph import create_graph
 from .maps import intersection_id_to_node_id, coords_to_road_id, intersection_id_to_coords
 from .format_coords import format_route, get_distance
 from .get_intersections import get_intersetions_from_route
 from flask import g
-import math, random
+import math, random, collections
+import multiprocessing
 
 def get_max_speed(road_id, time):
   sql = f"""
@@ -41,12 +42,11 @@ def get_max_speed(road_id, time):
   return speed, length
 
 def get_road_ids(route):
-  intersections = get_intersetions_from_route(route)
   road_id_list = []
 
-  for start_id, end_id in zip(intersections[:-1], intersections[1:]):
-    start_coord = tuple(reversed(intersection_id_to_coords[start_id]))
-    end_coord = tuple(reversed(intersection_id_to_coords[end_id]))
+  for start_id, end_id in zip(route[:-1], route[1:]):
+    start_coord = intersection_id_to_coords[start_id]
+    end_coord = intersection_id_to_coords[end_id]
 
     try:
       road_id = coords_to_road_id[(start_coord, end_coord)]
@@ -69,18 +69,15 @@ def calc_travel_time(road_id, time):
   
   return time_minutes
 
-
 def get_route(start, end, priority):
-  start = intersection_id_to_node_id[start]
-  end = intersection_id_to_node_id[end]
-
   random_time = random.choice(range(20))
-  G = createGraph(priority, random_time)
+  
+  G = create_graph(priority, random_time)
   ga = GA(G, start, end)
-  best = ga.run()
+  best, fitness = ga.run()
 
   time = 0
-
+  
   for road_id in get_road_ids(best):
     time += calc_travel_time(road_id, random_time)
 

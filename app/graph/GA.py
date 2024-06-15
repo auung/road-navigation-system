@@ -4,7 +4,7 @@ import networkx as nx
 
 
 class GA:
-  def __init__(self, graph, source, target, population_size=40, generations=400, mutation_rate=0.25, tournament_size=10):
+  def __init__(self, graph, source, target, population_size=30, generations=300, mutation_rate=0.3, tournament_size=5):
     self.graph = graph
     self.source = source
     self.target = target
@@ -21,25 +21,8 @@ class GA:
       population.append(individual)
     
     return population
-
-  def random_path_random(self, start, end):
-    path = [start]
-
-    while path[-1] != end:
-      path = [start]
-
-      while path[-1] != end:
-        neighbors = list(filter(lambda x: x not in path, self.graph.successors(path[-1])))
-
-        if not neighbors:
-          break;  # Dead end
-
-        next_node = random.choice(neighbors)
-        path.append(next_node)
-
-    return path
-
-  def random_path_backtrack(self, start, end):
+ 
+  def random_path(self, start, end):
     for _ in range(self.graph.number_of_nodes()):
       path = [start]
       visited = set(path)
@@ -64,10 +47,7 @@ class GA:
       if path[-1] == end:
         return path
 
-    return None
-
-  def random_path(self, start, end):
-    return self.random_path_backtrack(start, end)
+    return []
 
   def fitness(self, individual):
     if (individual[-1] != self.target):
@@ -75,10 +55,18 @@ class GA:
     path_length = sum(self.graph[edge[0]][edge[1]][0]['weight'] for edge in zip(individual[:-1], individual[1:]))
     return 10 / path_length
 
+  def roulette_wheel_selection(self, population, fitnesses):
+    total_fitness = sum(fitnesses)
+    selection_probs = [fitness / total_fitness for fitness in fitnesses]
+    selected_index = np.random.choice(range(len(population)), p=selection_probs)
+
+    return population[selected_index]
+
   def tournament_selection(self):
     tournament = random.sample(self.population, self.tournament_size)
     tournament_fitness = [self.fitness(individual) for individual in tournament]
-    return tournament[np.argmax(tournament_fitness)]
+    
+    return self.roulette_wheel_selection(tournament, tournament_fitness)
 
   def crossover(self, parent1, parent2):
     min_length = sorted([len(parent1), len(parent2)])[0]
@@ -87,6 +75,29 @@ class GA:
     child = parent1[:start] + parent2[start:end] + parent1[end:]
 
     return self.fix_path(child)
+
+  def optimize_path(self, path):
+    new_path = []
+    i = 0
+
+    while i < len(path):
+      successors = self.graph.successors(path[i])
+      new_node = path[i]
+      
+      for j in range(i + 2, len(path)):
+        if path[j] in successors:
+          i = j
+          break
+
+        if path[i] == path[j]:
+          i = j + 1
+          new_node = path[j]
+          break
+      else:
+        i += 1
+        
+      new_path.append(new_node)
+    return new_path
 
   def fix_path(self, path):
     seen = set()
@@ -104,17 +115,18 @@ class GA:
             seen.add(i)
 
         except nx.NetworkXNoPath:
-          return None
+          return []
       else:
         seen.add(node)
         new_path.append(node)
 
-    return new_path
+    return self.optimize_path(new_path)
 
   def mutate(self, individual):
     if len(individual) > 2 and random.random() < self.mutation_rate:
       node = random.choice(range(len(individual))[:-1])
-      individual = individual[:node] + self.random_path(individual[node], self.target)
+      local_target = random.choice(range(len(individual))[node:])
+      individual = individual[:node] + self.random_path(individual[node], individual[local_target]) + individual[local_target + 1:]
 
     return individual
 
@@ -124,6 +136,7 @@ class GA:
 
     for generation in range(self.generations):
       new_population = []
+      new_population.append(sorted(self.population, key=lambda x: self.fitness(x))[-1])
 
       while len(new_population) < self.population_size:
         best1 = self.tournament_selection()
@@ -133,9 +146,11 @@ class GA:
         if len(child) > 2:
           child = self.mutate(child)
 
+          if child:
+            new_population.append(child)
+
         new_population.append(best1)
         new_population.append(best2)
-        new_population.append(child)
 
       self.population = new_population
 
@@ -147,5 +162,4 @@ class GA:
 
       # print(f"Generation {generation + 1}: Best path = {best_individual}, Best Fitness = {best_fitness}")
 
-    # path_length = sum(self.graph[edge[0]][edge[1]]['weight'] for edge in zip(best_individual[:-1], best_individual[1:]))
-    return best_individual
+    return best_individual, best_fitness

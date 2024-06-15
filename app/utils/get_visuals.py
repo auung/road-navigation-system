@@ -1,12 +1,10 @@
 from ..graph.GA_vis import GA
-from ..graph.graph import createGraph
+from ..graph.graph import create_graph
 from .maps import intersection_id_to_node_id
 
 def get_visuals():
-  G = createGraph()
-  start = intersection_id_to_node_id[6]
-  end = intersection_id_to_node_id[104]
-  ga = GA(G, start, end)
+  G = create_graph()
+  ga = GA(G, 6, 31)
 
   all = ga.run()
 
