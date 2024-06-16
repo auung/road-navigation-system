@@ -1,14 +1,19 @@
 import json
-from flask import Blueprint, current_app, jsonify, request, g
+from flask import Blueprint, current_app, jsonify, request, g, send_from_directory
 from flask_cors import CORS
 from . import db
 import time
 
-api = Blueprint("api", __name__)
-CORS(api, resources=r"/api/*", origins=["http://localhost:5173"])
+api = Blueprint("api", __name__, static_folder="./static", static_url_path="/")
+# CORS(api, resources=r"/api/*", origins=["http://localhost:5173"])
 
 @api.route("/")
 def index():
+  print(api.static_folder)
+  return send_from_directory(api.static_folder, "index.html")
+
+@api.route("/traffic")
+def traffic():
   from .utils.get_road_segments import get_road_segments
   
   road_segments = get_road_segments(current_app.roads, current_app.nodes)

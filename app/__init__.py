@@ -25,7 +25,7 @@ def create_app():
       g.cursor = g.conn.cursor()
 
   from .api import api
-  app.register_blueprint(api, url_prefix="/api")
+  app.register_blueprint(api)
 
   return app
 
