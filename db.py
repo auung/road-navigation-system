@@ -129,9 +129,9 @@ class Database:
     
 
   def delete_tables(self):
-    self.cursor.execute("DROP TABLE `roads`")
-    self.cursor.execute("DROP TABLE `segments`")
-    self.cursor.execute("DROP TABLE `traffic`")
+    self.cursor.execute("DROP TABLE IF EXISTS `roads`")
+    self.cursor.execute("DROP TABLE IF EXISTS `segments`")
+    self.cursor.execute("DROP TABLE IF EXISTS `traffic`")
 
 
   def create_tables(self):
