@@ -25,11 +25,20 @@ Clone the repository:
 git clone https://github.com/auung/road-navigation-system.git
 ```
 
-Install Python dependencies:
+Create virtual environment:
 ```sh
-pip install -r requirements.txt
+py -m venv .venv
 ```
 
+Activate virtual environment:
+```sh
+.venv/Scripts/activate
+```
+
+Install Python dependencies:
+```sh
+py -m pip install -r requirements.txt
+```
 
 Start the system:
 ```sh
